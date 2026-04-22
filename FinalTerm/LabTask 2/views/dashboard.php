@@ -19,7 +19,7 @@ $linkColor = ($theme === "dark") ? "#87ceeb" : "#0066cc";
 
 <html>
 <body style="background-color: <?php echo $bgColor; ?>; color: <?php echo $txtColor; ?>; font-family: Arial, sans-serif; margin: 20px;">
-    <h1>Greetings! Welcome to Dashboard <strong><?php echo htmlspecialchars($username); ?></strong></h1>
+    <h1>HelloHieeee! Welcome to Dashboard <strong><?php echo htmlspecialchars($username); ?></strong></h1>
     <p>Login Time: <?php echo $loginTime; ?></p>
 
     <div style="margin-top: 20px;">

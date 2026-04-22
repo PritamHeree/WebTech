@@ -4,103 +4,119 @@ require_once 'ValidationModel.php';
 
 $action = $_GET["action"] ?? "";
 
-// ---- REGISTER ----
-if($action === "register") {
-    $username        = $_POST["username"] ?? "";
-    $email           = $_POST["email"] ?? "";
-    $password        = $_POST["password"] ?? "";
-    $confirmPassword = $_POST["confirmPassword"] ?? "";
+$usersFile = __DIR__ . '/../models/users.json';
 
-    $usernameError        = validateUsername($username);
-    $emailError           = validateEmail($email);
-    $passwordError        = validatePassword($password);
-    $confirmPasswordError = validateConfirmPassword($password, $confirmPassword);
-
-    if($usernameError || $emailError || $passwordError || $confirmPasswordError) {
-        $_SESSION["usernameError"]        = $usernameError;
-        $_SESSION["emailError"]           = $emailError;
-        $_SESSION["passwordError"]        = $passwordError;
-        $_SESSION["confirmPasswordError"] = $confirmPasswordError;
-        $_SESSION["username"]             = $username;
-        $_SESSION["email"]                = $email;
-        header("Location: ../views/register.php");
-        exit();
+function loadUsers($file){
+    if(file_exists($file)){
+        $data = file_get_contents($file);
+        return json_decode($data, true) ?: array();
     }
-
-    // Check if username already exists
-    $users = array("Pritam"=>"123456", "Samiha"=>"12345", "Hamid"=>"1234567");
-    if(isset($users[$username])) {
-        $_SESSION["registrationError"] = "Username already exists. Please choose another.";
-        $_SESSION["username"]          = $username;
-        $_SESSION["email"]             = $email;
-        header("Location: ../views/register.php");
-        exit();
-    }
-
-    // Successful registration - store in session
-    $_SESSION["username"]  = $username;
-    $_SESSION["loginTime"] = date("Y-m-d H:i:s");
-    $_SESSION["isLoggedIn"] = true;
-
-    header("Location: ../views/dashboard.php");
-    exit();
+    return array();
 }
 
-// ---- LOGIN ----
-if($action === "login") {
-    $username = $_POST["username"] ?? "";
-    $password = $_POST["password"] ?? "";
+function saveUsers($file, $users){
+    file_put_contents($file, json_encode($users));
+}
 
-    $hasUsernameError = false;
-    $hasPasswordError = false;
+// Register
+if($action === "register"){
+    $username = $_POST["username"];
+    $email = $_POST["email"];
+    $password = $_POST["password"];
+    $confirmPassword = $_POST["confirmPassword"];
 
-    if(!$username) {
-        $_SESSION["loginUsernameError"] = "Username is required";
-        $hasUsernameError = true;
-    } else {
-        unset($_SESSION["loginUsernameError"]);
-    }
+    $usernameError = validateUsername($username);
+    $emailError = validateEmail($email);
+    $passwordError = validatePassword($password);
+    $confirmPasswordError = validateConfirmPassword($password, $confirmPassword);
 
-    if(!$password) {
-        $_SESSION["loginPasswordError"] = "Password is required";
-        $hasPasswordError = true;
-    } else {
-        unset($_SESSION["loginPasswordError"]);
-    }
-
-    if($hasUsernameError || $hasPasswordError) {
-        $_SESSION["loginUsername"] = $username;
-        header("Location: ../views/login.php");
+    if($usernameError || $emailError || $passwordError || $confirmPasswordError){
+        $_SESSION["usernameError"] = $usernameError;
+        $_SESSION["emailError"] = $emailError;
+        $_SESSION["passwordError"] = $passwordError;
+        $_SESSION["confirmPasswordError"] = $confirmPasswordError;
+        $_SESSION["username"] = $username;
+        $_SESSION["email"] = $email;
+        Header("Location: ../views/register.php");
         exit();
     }
 
-    // Authenticate against hardcoded users
-    $users = array("Pritam"=>"123456", "Samiha"=>"12345", "Hamid"=>"1234567");
-    $isFound = false;
-
-    foreach($users as $user => $pass) {
-        if($username === $user && $password === $pass) {
-            $isFound = true;
-            $_SESSION["username"]   = $username;
-            $_SESSION["loginTime"]  = date("Y-m-d H:i:s");
-            $_SESSION["isLoggedIn"] = true;
-            header("Location: ../views/dashboard.php");
+    $users = loadUsers($usersFile);
+    foreach($users as $user){
+        if($user["username"] === $username){
+            $_SESSION["registrationError"] = "Username already exists!";
+            $_SESSION["username"] = $username;
+            $_SESSION["email"] = $email;
+            Header("Location: ../views/register.php");
             exit();
         }
     }
 
-    if(!$isFound) {
-        $_SESSION["loginError"]    = "Your username or password is incorrect!";
+    $newUser = array("username"=>$username, "email"=>$email, "password"=>$password);
+    $users[] = $newUser;
+    saveUsers($usersFile, $users);
+
+    $_SESSION["username"] = $username;
+    $_SESSION["loginTime"] = date("Y-m-d H:i:s");
+    $_SESSION["isLoggedIn"] = true;
+    Header("Location: ../views/dashboard.php");
+    exit();
+}
+
+// Login
+if($action === "login"){
+    $username = $_POST["username"];
+    $password = $_POST["password"];
+
+    $hasUsernameError = true;
+    $hasPasswordError = true;
+
+    if(!$username){
+        $_SESSION["loginUsernameError"] = "Username is required";
+        $hasUsernameError = true;
+    }else{
+        unset($_SESSION["loginUsernameError"]);
+        $hasUsernameError = false;
+    }
+
+    if(!$password){
+        $_SESSION["loginPasswordError"] = "Password is required";
+        $hasPasswordError = true;
+    }else{
+        unset($_SESSION["loginPasswordError"]);
+        $hasPasswordError = false;
+    }
+
+    if($hasUsernameError || $hasPasswordError){
         $_SESSION["loginUsername"] = $username;
-        header("Location: ../views/login.php");
+        Header("Location: ../views/login.php");
         exit();
+    }else{
+        $users = loadUsers($usersFile);
+        $isFound = false;
+        foreach($users as $user){
+            if($username === $user["username"] && $password === $user["password"]){
+                $isFound = true;
+                $_SESSION["username"] = $username;
+                $_SESSION["loginTime"] = date("Y-m-d H:i:s");
+                $_SESSION["isLoggedIn"] = true;
+                Header("Location: ../views/dashboard.php");
+                exit();
+            }
+        }
+        if(!$isFound){
+            $_SESSION["credentialError"] = "Your username or password is incorrect!";
+            $_SESSION["loginUsername"] = $username;
+            Header("Location: ../views/login.php");
+            exit();
+        }
     }
 }
 
-// ---- LOGOUT ----
-if($action === "logout") {
+// Logout
+if($action === "logout"){
     session_destroy();
-    header("Location: ../views/login.php");
+    Header("Location: ../views/login.php");
     exit();
 }
 

@@ -17,7 +17,7 @@ if($isCookieSet){
 
 <html>
 <body>
-    <h1>Greetings! Welcome to Dashboard <strong><?php echo $username;?></strong></h1>
+    <h1>HelloHi! Welcome to Dashboard <strong><?php echo $username;?></strong></h1>
     <a href="../Controller/logout.php">Logout</a>
 
     <div>
